@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全球发展探索器 — 交互式可视化</title>
+  <meta name="description" content="探索40个国家1960-2023年间经济发展、健康与环境影响的交互式可视化。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="app-header">
+      <h1>🌍 全球发展探索器</h1>
+      <p class="subtitle">探索40个国家1960-2023年间财富、健康与环境影响的关系</p>
+    </header>
+
+    <!-- Tab Navigation: Visualization | Documentation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="tab-viz">📊 可视化</button>
+      <button class="tab-btn" data-tab="tab-docs">📄 说明文档</button>
+    </div>
+
+    <!-- ===== VISUALIZATION TAB ===== -->
+    <div id="tab-viz" class="tab-content active">
+
+      <!-- Controls Panel -->
+      <div class="controls-panel">
+        <div class="control-group">
+          <label>大洲：</label>
+          <div class="continent-filters">
+            <button class="continent-btn active" data-continent="Asia">亚洲</button>
+            <button class="continent-btn active" data-continent="Europe">欧洲</button>
+            <button class="continent-btn active" data-continent="Americas">美洲</button>
+            <button class="continent-btn active" data-continent="Africa">非洲</button>
+            <button class="continent-btn active" data-continent="Oceania">大洋洲</button>
+            <button class="btn" id="select-all-continents">全选</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>X轴：</label>
+          <select id="x-metric">
+            <option value="gdp" selected>人均GDP</option>
+            <option value="co2">CO₂排放量</option>
+            <option value="population">人口</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Y轴：</label>
+          <select id="y-metric">
+            <option value="lifeExp" selected>预期寿命</option>
+            <option value="gdp">人均GDP</option>
+            <option value="co2">CO₂排放量</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Selection Info -->
+      <div id="selection-info" class="selection-info">
+        <span id="selection-text" class="selection-text"></span>
+        <button id="clear-selection" class="clear-btn">✕ 清除</button>
+      </div>
+
+      <!-- Info Bar -->
+      <div class="info-bar">
+        <div class="stat-item">
+          <div class="stat-value" id="stat-countries">40</div>
+          <div class="stat-label">国家数量</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-population">—</div>
+          <div class="stat-label">总人口</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-lifeexp">—</div>
+          <div class="stat-label">平均预期寿命</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-gdp">—</div>
+          <div class="stat-label">平均人均GDP</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-co2">—</div>
+          <div class="stat-label">CO₂排放总量</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-container">
+        <!-- Bubble Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>🔵 气泡图 — GDP vs 预期寿命</h3>
+            <span class="chart-info">气泡大小 = 人口 | 拖拽平移 </span>
+          </div>
+          <div class="chart-card-body">
+            <div id="bubble-chart-container"></div>
+            <div class="zoom-controls">
+              <button class="zoom-btn" id="zoom-in" title="放大">+</button>
+              <button class="zoom-btn" id="zoom-out" title="缩小">−</button>
+              <button class="zoom-btn" id="zoom-reset" title="重置缩放">⟲</button>
+            </div>
+          </div>
+          <!-- Timeline (integrated with chart) -->
+          <div class="timeline-section" style="border-top: 1px solid #2d3748; margin-top: 8px; padding-top: 10px;">
+            <div class="timeline-header">
+              <div class="timeline-controls">
+                <button id="play-btn" class="btn primary">▶ 播放</button>
+                <div class="speed-control">
+                  <button class="btn" id="speed-down">🐢</button>
+                  <span id="speed-display">1.0s</span>
+                  <button class="btn" id="speed-up">🐇</button>
+                </div>
+              </div>
+              <div class="year-display" id="year-display">2023</div>
+            </div>
+            <div class="timeline-slider-container">
+              <input type="range" class="timeline-slider" id="year-slider" min="0" max="13" value="13">
+              <div class="timeline-markers" id="timeline-markers"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>📊 国家排名</h3>
+            <span class="chart-info" id="bar-chart-info">按人口排名前15</span>
+          </div>
+          <div class="chart-card-header" style="padding-top:0;padding-bottom:12px;border:none;">
+            <label style="font-size:0.85rem;color:#8892a8;">排序指标：</label>
+            <select id="bar-metric">
+              <option value="population" selected>人口</option>
+              <option value="gdp">人均GDP</option>
+              <option value="lifeExp">预期寿命</option>
+              <option value="co2">CO₂排放量</option>
+            </select>
+          </div>
+          <div class="chart-card-body">
+            <div id="bar-chart-container"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== DOCUMENTATION TAB ===== -->
+    <div id="tab-docs" class="tab-content">
+      <div class="docs-section">
+
+        <h2>📄 项目说明文档</h2>
+
+        <div class="docs-grid">
+          <div class="docs-card">
+            <h4>❓ 研究问题</h4>
+            <p><strong>"一个国家的经济发展（人均GDP）如何影响其人民的健康与幸福？环境代价是什么？"</strong></p>
+            <p style="margin-top:10px;">本可视化探索了40个国家在六十年间（1960–2023）的财富（人均GDP）、健康结果（预期寿命）、人口规模与环境影响（CO₂排放量）之间的动态关系。通过时间动画，用户可以发现以下规律：</p>
+            <ul>
+              <li>"健康转型" —— 预期寿命随经济增长快速上升后趋于平稳</li>
+              <li>中国和印度自1980年代以来的经济腾飞轨迹</li>
+              <li>1990年代非洲国家因HIV/AIDS危机导致的预期寿命下降</li>
+              <li>环境代价：经济增长往往伴随更多CO₂排放</li>
+              <li>后苏联时代俄罗斯在1990年代预期寿命的暂时下降</li>
+            </ul>
+          </div>
+
+          <div class="docs-card">
+            <h4>🎨 设计决策</h4>
+            <p><strong>可视化类型：</strong>选择气泡图（Gapminder风格）是因为它能同时编码4个维度——X轴位置（GDP）、Y轴位置（预期寿命）、气泡大小（人口）和颜色（大洲）。这提供了一目了然的全局发展模式概览。</p>
+            <p style="margin-top:8px;"><strong>对数X轴：</strong>人均GDP跨越多个数量级（从约40美元到约80000美元）。对数刻度确保发展中国家和发达国家都清晰可见且可比较。</p>
+            <p style="margin-top:8px;"><strong>颜色编码：</strong>基于大洲的颜色编码帮助用户快速识别区域模式和聚集。五种颜色经过精心选择以最大化可区分性。</p>
+            <p style="margin-top:8px;"><strong>多视图协调：</strong>条形图与气泡图联动。在一个视图中选择国家会在另一个视图中高亮显示，实现更深入的对比分析。</p>
+            <p style="margin-top:8px;"><strong>备选方案：</strong>曾考虑散点图矩阵和平行坐标图，但因牺牲了动画气泡图的直观性和吸引力而放弃。</p>
+          </div>
+
+          <div class="docs-card">
+            <h4>🔧 交互技术</h4>
+            <ul>
+              <li><strong>时间动画（动态查询）：</strong>播放/暂停按钮配合可调速度，让用户观察63年发展历程</li>
+              <li><strong>缩放与平移：</strong>鼠标滚轮缩放，拖拽背景平移——探索密集区域的关键功能</li>
+              <li><strong>工具提示（按需显示细节）：</strong>悬停气泡查看完整国家数据，遵循Shneiderman的信息搜索准则</li>
+              <li><strong>动态过滤：</strong>开关大洲过滤器以聚焦特定区域</li>
+              <li><strong>点击选择：</strong>点击气泡选择/取消单个国家，双视图同步更新</li>
+              <li><strong>指标切换：</strong>更改X/Y轴和条形图排序指标以探索不同关系</li>
+              <li><strong>多视图协调：</strong>条形图与气泡图选择同步更新</li>
+              <li><strong>标注标记：</strong>时间轴上的标记突出显示关键历史事件</li>
+            </ul>
+          </div>
+
+          <div class="docs-card">
+            <h4>📊 数据来源</h4>
+            <p>数据集基于以下公开数据：</p>
+            <ul>
+              <li><strong>Gapminder基金会</strong> — <a href="https://www.gapminder.org/data/" style="color:#4a90d9;">gapminder.org/data</a></li>
+              <li><strong>世界银行开放数据</strong> — <a href="https://data.worldbank.org/" style="color:#4a90d9;">data.worldbank.org</a></li>
+              <li><strong>Our World in Data</strong> — <a href="https://ourworldindata.org/" style="color:#4a90d9;">ourworldindata.org</a></li>
+            </ul>
+            <p style="margin-top:8px;">数据集包含横跨5个大洲的40个代表性国家，时间跨度为1960至2023年（每5年一个数据点）。指标包括人均GDP（当年美元）、出生时预期寿命（年）、总人口和CO₂排放量（公吨）。由于数据可获得性，俄罗斯和波兰的历史数据从1985年开始。</p>
+          </div>
+
+          <div class="docs-card">
+            <h4>💻 技术实现</h4>
+            <p><strong>技术栈：</strong></p>
+            <ul>
+              <li><strong>D3.js v7</strong> — 核心可视化库，用于SVG渲染、比例尺、坐标轴、过渡动画、缩放交互</li>
+              <li><strong>原生 JavaScript (ES6+)</strong> — 应用逻辑、状态管理、事件处理</li>
+              <li><strong>HTML5 + CSS3</strong> — 现代响应式布局，使用CSS Grid、Flexbox和自定义属性</li>
+              <li><strong>无服务器端依赖</strong> — 纯静态文件，从本地JSON文件加载数据</li>
+            </ul>
+            <p style="margin-top:8px;"><strong>关键技术特性：</strong></p>
+            <ul>
+              <li>时间周期之间平滑的过渡动画（D3 transitions）</li>
+              <li>D3 zoom行为实现平移缩放及坐标轴重缩放</li>
+              <li>响应式SVG（viewBox）实现跨设备兼容</li>
+              <li>CSS自定义属性实现一致的主题风格</li>
+            </ul>
+          </div>
+
+          <div class="docs-card">
+            <h4>⏱ 开发过程</h4>
+            <p><strong>总工时：</strong>约25-30小时</p>
+            <ul>
+              <li><strong>数据收集与准备：</strong>从多个来源收集、清洗和格式化数据为统一的JSON结构</li>
+              <li><strong>气泡图实现：</strong>搭建D3比例尺、坐标轴、气泡、标签、过渡动画</li>
+              <li><strong>交互功能：</strong>实现缩放、工具提示、点击选择、协调视图</li>
+              <li><strong>条形图与协调：</strong>创建排名条形图并实现多视图联动</li>
+              <li><strong>时间轴与动画：</strong>年份滑块、播放/暂停、速度控制、标注标记</li>
+              <li><strong>UI/UX设计：</strong>深色主题样式、响应式布局、控制面板、统计信息栏</li>
+              <li><strong>文档与测试：</strong>编写文档、跨浏览器测试、Bug修复</li>
+              <li><strong>部署：</strong>GitHub Pages配置和测试</li>
+            </ul>
+            <p style="margin-top:8px;"><strong>最耗时的部分：</strong>交互功能（缩放协调）和确保状态切换时的流畅动画是最具挑战性和耗时的部分。</p>
+          </div>
+        </div>
+
+        <div class="docs-card" style="margin-top:12px;">
+          <h4>📚 参考文献与灵感来源</h4>
+          <ul>
+            <li><strong>Gapminder / Hans Rosling：</strong>气泡图设计直接受到Hans Rosling著名的Gapminder可视化和TED演讲的启发，精彩地展示了动画散点图如何揭示发展趋势。</li>
+            <li><strong>NameVoyager：</strong>动态查询交互模式（大洲过滤器、时间滑块）借鉴了课堂上讨论的NameVoyager应用。</li>
+            <li><strong>Shneiderman信息搜索准则：</strong>"先总览，缩放和过滤，再按需显示细节"指导了分层交互设计。</li>
+            <li><strong>Bostock, M. (2017)：</strong>D3.js文档和示例——<a href="https://d3js.org/" style="color:#4a90d9;">d3js.org</a></li>
+            <li><strong>Observable Notebooks：</strong>参考了多个D3缩放示例的实现模式。</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>全球发展探索器 — 交互式可视化课程作业</p>
+      <p>基于 <a href="https://d3js.org/" target="_blank">D3.js</a> 构建 | 数据来源 <a href="https://www.gapminder.org/data/" target="_blank">Gapminder</a> & <a href="https://data.worldbank.org/" target="_blank">世界银行</a></p>
+    </footer>
+
+  </div>
+
+  <!-- D3.js v7 from CDN -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- Application JavaScript -->
+  <script src="js/main.js"></script>
+
+</body>
+</html>
